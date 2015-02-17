@@ -1,51 +1,85 @@
-def eh_star(graph, start, goal, h):
+# Heuristic search algorithm A*
+def eh_star(graph, start, is_goal, heuristic, trans):
     closedset = []
     openset = [start]
     came_from = {}
     g_score = {}
     f_score = {}
 
-    g_score[start] = 0
-    f_score[start] = g_score[start] + h(graph, start, goal)
+    g_score[start.label] = 0
+    f_score[start.label] = g_score[start.label] + heuristic(graph, start, is_goal)
 
     count = 0
     while len(openset) > 0:
         count += 1
         current = openset[0]
-        for node in openset:
-            if f_score[node] < f_score[current]:
-                current = node
-        if current == goal:
-            return reconstruct_path(came_from, goal)
-        
+
+        for open_state in openset:
+            if f_score[open_state.label] < f_score[current.label]:
+                current = open_state
+
+        if is_goal(current):
+            return (reconstruct_path(came_from, current), g_score[current.label], count)
+
         openset.remove(current)
         closedset.append(current)
 
-        for neighbor in graph.edges_out(current):
-            if neighbor.dest in closedset:
+        for neighbor in trans(graph, current):
+            skip = False
+            for closed_state in closedset:
+                if closed_state.label == neighbor[0].label:
+                    skip = True
+            if skip:
                 continue
-            temp_g_score = g_score[current] + neighbor.weight
 
-            if neighbor.dest not in openset or temp_g_score < g_score[neighbor.dest]:
-                came_from[neighbor.dest] = current
-                g_score[neighbor.dest] = temp_g_score
-                f_score[neighbor.dest] = g_score[neighbor.dest] + h(graph, neighbor.dest, goal)
-                if neighbor.dest not in openset:
-                    openset.append(neighbor.dest)
+            temp_g_score = g_score[current.label] + neighbor[1]
 
+            doStuff = True
+            for open_state in openset:
+                if open_state.label == neighbor[0].label: 
+                    doStuff = False
+            if (not doStuff) and (temp_g_score < g_score[neighbor[0].label]):
+                doStuff = True
+
+            if doStuff:
+                came_from[neighbor[0].label] = current
+                g_score[neighbor[0].label] = temp_g_score
+                f_score[neighbor[0].label] = g_score[neighbor[0].label] + heuristic(graph, neighbor[0], is_goal)
+                for open_state in openset:
+                    if open_state.label == neighbor[0].label: 
+                        doStuff = False
+                if doStuff:
+                    openset.append(neighbor[0])
+
+# Used with eh_star to reconstruct path to the goal node
 def reconstruct_path(came_from, current):
-    path = [current]
-    while current in came_from:
-        current = came_from[current]
-        path.insert(0,current)
+    path = [current.label]
+    while current.label in came_from.keys():
+        current = came_from[current.label]
+        path.insert(0,current.label)
     return path
 
-def bad_heuristic(graph, node_A, node_B):
+# A simple admissible heuristic. Results in Dijkstra's algorithm
+def bad_heuristic(graph, state_A, state_B):
     return 0
 
+# Straight Line Distance between 2 points
 def SLD(graph, node_A, node_B):
     return ((graph.verticies[node_A].x - graph.verticies[node_B].x)**2+(graph.verticies[node_A].y - graph.verticies[node_B].y)**2)**.5
 
+def truck_heuristic(graph, state_A, goal_state):
+    cost = 0
+    for index in range(0, len(state_A.trucks)):
+        if state_A.packages[index].location != state_A.packages[index].dest:
+            if state_A.trucks[index].has_package():
+                cost += SLD(graph, state_A.packages[index].location, state_A.packages[index].dest)
+            else:
+                cost += SLD(graph, state_A.trucks[index].location, state_A.packages[index].location)
+        else:
+            cost += SLD(graph, state_A.trucks[index].location, state_A.garage)
+    return cost
+
+# Finds all paths between start and dest nodes in a graph, returns list of paths
 def find_paths(graph, start, dest, path=[]):
     path = path + [start]
     if start == dest:
@@ -58,27 +92,13 @@ def find_paths(graph, start, dest, path=[]):
                 paths.append(newPath)
     return paths
 
+# Breadth First Search, returns path between start and end node
 def bfs(graph, start, end):
     queue = []
     queue.append([start])
     while queue:
         #print queue
-        path = queue.pop(0)
-        tail = path[-1]
-        if tail == end:
-            return path
-        for edge in graph.edges_out(tail):
-            if edge.dest not in path:
-                newPath = list(path)
-                newPath.append(edge.dest)
-                queue.append(newPath)
-
-def dfs(graph, start, end):
-    queue = []
-    queue.append([start])
-    while queue:
-        #print queue
-        path = queue.pop(-1)
+        path = queue.pop(0) # For dfs change to -1
         tail = path[-1]
         if tail == end:
             return path
