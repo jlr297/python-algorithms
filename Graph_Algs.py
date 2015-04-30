@@ -1,5 +1,5 @@
 # Heuristic search algorithm A*
-def eh_star(graph, start, is_goal, heuristic, trans):
+def a_star(graph, start, is_goal, heuristic, trans):
     closedset = []
     openset = [start]
     came_from = {}
@@ -51,7 +51,7 @@ def eh_star(graph, start, is_goal, heuristic, trans):
                 if doStuff:
                     openset.append(neighbor[0])
 
-# Used with eh_star to reconstruct path to the goal node
+# Used with a_star to reconstruct path to the goal node
 def reconstruct_path(came_from, current):
     path = [current.label]
     while current.label in came_from.keys():
@@ -66,18 +66,6 @@ def bad_heuristic(graph, state_A, state_B):
 # Straight Line Distance between 2 points
 def SLD(graph, node_A, node_B):
     return ((graph.verticies[node_A].x - graph.verticies[node_B].x)**2+(graph.verticies[node_A].y - graph.verticies[node_B].y)**2)**.5
-
-def truck_heuristic(graph, state_A, goal_state):
-    cost = 0
-    for index in range(0, len(state_A.trucks)):
-        if state_A.packages[index].location != state_A.packages[index].dest:
-            if state_A.trucks[index].has_package():
-                cost += SLD(graph, state_A.packages[index].location, state_A.packages[index].dest)
-            else:
-                cost += SLD(graph, state_A.trucks[index].location, state_A.packages[index].location)
-        else:
-            cost += SLD(graph, state_A.trucks[index].location, state_A.garage)
-    return cost
 
 # Finds all paths between start and dest nodes in a graph, returns list of paths
 def find_paths(graph, start, dest, path=[]):

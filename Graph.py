@@ -18,9 +18,6 @@ class Vertex():
     def edges_out(self):
         return self.edges
 
-    def location(self):
-        return (self.x,self.y)
-
 class Edge():
     def __init__(self,A,B,weight=None):
         self.src = A
